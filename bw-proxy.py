@@ -75,24 +75,36 @@ def text_scalar(text, font, img_size, img_fill = 0.95):
             font_size -= jump_size
         font = ImageFont.truetype(FONT_TYPE, font_size)
         if jump_size <= 1:
+            if font_size > CARD_WIDTH / 11: # may be bad~44
+                font_size = CARD_WIDTH // 11 
+            print(font_size)
             return font_size
-def card_image(card):
-    font = ImageFont.truetype(FONT_TYPE, 1)
-    cd = Image.new('1', (CARD_WIDTH, CARD_HEIGHT), 1) # 1=BW
-    d = ImageDraw.Draw(cd)
+def add_name(d, card, font):
     cost = card.mana_cost
     if cost is None:
         cost = ''
     top = card.name + '    ' + cost
     n_size = text_scalar(top, font, CARD_WIDTH)
-    if n_size > 40:
-        n_size -= 14
     d.text((EDGE_SCALE, N_SCALE), top, fill='black', anchor='ls', 
         font=ImageFont.truetype(FONT_TYPE, n_size))
-    d.text((4, T_SCALE), card.type, fill='black', anchor='ls',
-        font=font)
-    d.text((4, T_SCALE + 16), card.text, fill='black', anchor='ls',
-        font=font)
+    return d
+def add_type(d, card, font):
+    t_size = text_scalar(card.type, font, CARD_WIDTH)
+    d.text((EDGE_SCALE, T_SCALE), card.type, fill='black', anchor='ls',
+        font=ImageFont.truetype(FONT_TYPE, t_size))
+    return d
+
+def card_image(card):
+    print("Drawing....", card.name)
+    font = ImageFont.truetype(FONT_TYPE, 1)
+    cd = Image.new('1', (CARD_WIDTH, CARD_HEIGHT), 1) # 1=BW
+    d = ImageDraw.Draw(cd)
+    print('[', end='')
+    d = add_name(d, card, font)
+    print('#', end='')
+    d = add_type(d, card, font)
+#    d.text((4, T_SCALE + 16), card.text, fill='black', anchor='ls',
+#        font=font)
     cd.show()
 
 def main():
