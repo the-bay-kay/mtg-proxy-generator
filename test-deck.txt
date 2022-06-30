@@ -1,14 +1,14 @@
-2 Assassin's Trophy
 2 Blood Crypt
+2 Mountain
+3 Inquisition of Kozilek
 3 Bloodbraid Elf
+4 Liliana of the Veil
+2 Assassin's Trophy
 4 Bloodstained Mire
 1 Forest
 4 Ignoble Hierarch
-3 Inquisition of Kozilek
 4 Lightning Bolt
-4 Liliana of the Veil
 2 Molten Rain
-2 Mountain
 1 Overgrown Tomb
 3 Pillage
 1 Rain of Tears
