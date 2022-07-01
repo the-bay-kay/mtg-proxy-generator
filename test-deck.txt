@@ -1,6 +1,6 @@
 # 1 Phyrexian Obliterator
-# 1 Spawnsire of Ulamog
-1 Takklemaggot
+1 Shahrazad
+# 1 Takklemaggot
 # 3 Inquisition of Kozilek
 4 Liliana of the Veil
 2 Mountain

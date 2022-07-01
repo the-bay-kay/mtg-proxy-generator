@@ -101,21 +101,28 @@ def add_text(d, card, font):
     # 11 words max?
     text = card.text.splitlines()
     row = O_SCALE
+    queue = []
+    size = 999; # default
     for par in text:
-        size = 999; # default
         body = par.split()
-        queue = []
+        n_per_line = 6 if len(body) > 60 else 4
+        print(len(body), n_per_line)
         while len(body) > 0:
-            clip = min(len(body), 4) 
+            clip = min(len(body), n_per_line) 
             sub = ' '.join(body[0:clip])
             new_size = text_scalar(sub, font, CARD_WIDTH)
             size = min(new_size, size)
             queue.append(sub)
             body = body[clip:]
-        for l in queue:
-            d.text((EDGE_SCALE, row), l, fill='black', anchor='ls',
-                font=ImageFont.truetype(FONT_TYPE, size))
+        queue.append('#BUFFER#')
+    for l in queue:
+        if l == '#BUFFER#':
+            print("BINGO!")
             row += size
+            continue
+        d.text((EDGE_SCALE, row), l, fill='black', anchor='ls',
+            font=ImageFont.truetype(FONT_TYPE, size))
+        row += size
 
 def card_image(card):
     print("Drawing....", card.name)
