@@ -1,4 +1,7 @@
-3 Inquisition of Kozilek
+# 1 Phyrexian Obliterator
+# 1 Spawnsire of Ulamog
+1 Takklemaggot
+# 3 Inquisition of Kozilek
 4 Liliana of the Veil
 2 Mountain
 2 Blood Crypt

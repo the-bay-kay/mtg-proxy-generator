@@ -45,6 +45,8 @@ def read_infile():
     for c in c_list:
         data = c.split(' ', 1)
         c_name = data[1]
+        if c[0] == '#':
+            continue
         if c_name in BASICS:
             continue
         print('Looking for: ', c_name, '...')
@@ -77,8 +79,8 @@ def text_scalar(text, font, img_size, img_fill = 0.95):
         if jump_size <= 1:
             if font_size > CARD_WIDTH / 11: # may be bad~44
                 font_size = CARD_WIDTH // 11 
-            print(font_size)
             return font_size
+
 def add_name(d, card, font):
     cost = card.mana_cost
     if cost is None:
@@ -88,23 +90,41 @@ def add_name(d, card, font):
     d.text((EDGE_SCALE, N_SCALE), top, fill='black', anchor='ls', 
         font=ImageFont.truetype(FONT_TYPE, n_size))
     return d
+
 def add_type(d, card, font):
     t_size = text_scalar(card.type, font, CARD_WIDTH)
     d.text((EDGE_SCALE, T_SCALE), card.type, fill='black', anchor='ls',
         font=ImageFont.truetype(FONT_TYPE, t_size))
     return d
 
+def add_text(d, card, font):
+    # 11 words max?
+    text = card.text.splitlines()
+    row = O_SCALE
+    for par in text:
+        size = 999; # default
+        body = par.split()
+        queue = []
+        while len(body) > 0:
+            clip = min(len(body), 4) 
+            sub = ' '.join(body[0:clip])
+            new_size = text_scalar(sub, font, CARD_WIDTH)
+            size = min(new_size, size)
+            queue.append(sub)
+            body = body[clip:]
+        for l in queue:
+            d.text((EDGE_SCALE, row), l, fill='black', anchor='ls',
+                font=ImageFont.truetype(FONT_TYPE, size))
+            row += size
+
 def card_image(card):
     print("Drawing....", card.name)
     font = ImageFont.truetype(FONT_TYPE, 1)
     cd = Image.new('1', (CARD_WIDTH, CARD_HEIGHT), 1) # 1=BW
     d = ImageDraw.Draw(cd)
-    print('[', end='')
     d = add_name(d, card, font)
-    print('#', end='')
     d = add_type(d, card, font)
-#    d.text((4, T_SCALE + 16), card.text, fill='black', anchor='ls',
-#        font=font)
+    d = add_text(d, card, font)
     cd.show()
 
 def main():
