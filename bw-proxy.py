@@ -5,18 +5,24 @@ from mtgsdk import Card
 from mtgsdk import Set
 from PIL import Image, ImageDraw, ImageFont
 # stdlib imports
-import argparse, sys
+import argparse, sys, math
 
-# Globals for Scale
+# Globals for Scale (in future, add num per page?)
 # For normal card: 226 x 320 px
+# Page Card: 500 x 700
 FONT_SIZE = 14
 FONT_TYPE ='/usr/share/fonts/dejavu-sans-mono-fonts/DejaVuSansMono.ttf'
-CARD_WIDTH = 226 * 2
-CARD_HEIGHT = 320 * 2
+CARD_WIDTH = 500 # * 2
+CARD_HEIGHT = 700 # * 2
 EDGE_SCALE = CARD_WIDTH / 80 
 N_SCALE = CARD_HEIGHT / 20
 T_SCALE = CARD_HEIGHT / 2.2
 O_SCALE = CARD_HEIGHT / 1.9 
+
+NUM_P_W = 3
+NUM_P_H = 4
+PAGE_W = CARD_WIDTH * NUM_P_W
+PAGE_H = CARD_HEIGHT * NUM_P_H
 
 # Other Globals & argparse
 BASICS = ['Swamp', 'Forest', 'Mountain', 'Plains', 'Island'] 
@@ -45,7 +51,7 @@ def read_infile():
     for c in c_list:
         data = c.split(' ', 1)
         c_name = data[1]
-        if c[0] == '#':
+        if c[0] == '#' or len(c) == 0:
             continue
         if c_name in BASICS:
             continue
@@ -56,8 +62,10 @@ def read_infile():
             if c_name == c.name:
                 card = c
                 continue
-        decklist.append((data[0], card))
-        return decklist # debug
+        if card is None:
+            print('!!! Error: Could not find', c_name, '!!!', 
+                file=sys.stderr)
+        decklist.append((int(data[0]), card))
     return decklist
 
 '''
@@ -106,7 +114,6 @@ def add_text(d, card, font):
     for par in text:
         body = par.split()
         n_per_line = 6 if len(body) > 60 else 4
-        print(len(body), n_per_line)
         while len(body) > 0:
             clip = min(len(body), n_per_line) 
             sub = ' '.join(body[0:clip])
@@ -117,7 +124,6 @@ def add_text(d, card, font):
         queue.append('#BUFFER#')
     for l in queue:
         if l == '#BUFFER#':
-            print("BINGO!")
             row += size
             continue
         d.text((EDGE_SCALE, row), l, fill='black', anchor='ls',
@@ -132,10 +138,31 @@ def card_image(card):
     d = add_name(d, card, font)
     d = add_type(d, card, font)
     d = add_text(d, card, font)
-    cd.show()
+    return cd
 
 def main():
     deck = read_infile()
-    test = card_image(deck[0][1])
+    # test = card_image(deck[0][1])
+    pages = []
+    page = Image.new('1', (PAGE_W, PAGE_H), 1)
+    tally = 0;
+    for c in deck:
+        c_img = card_image(c[1])
+        for i in range(0, c[0]):
+            # Maybe coulda done this calc better, but...
+            x = CARD_WIDTH * (tally % 3)
+            y = CARD_HEIGHT * (math.floor(tally / 3) % 4)
+            # print(x, y)
+            # print(tally, math.floor(tally / 3) % 4, tally % 3)
+            page.paste(c_img, (x, y))
+            tally += 1
+            if (tally % 12) == 0:
+                pages.append(page.resize((1500, 2100)))
+                page = Image.new('1', (PAGE_W, PAGE_H), 1)
+    # pages[1].show()
+    for p in pages:
+        p.show()
+    print(len(pages))
+
 if __name__ == '__main__':
     main()        
