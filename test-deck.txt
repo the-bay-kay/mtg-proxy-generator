@@ -5,5 +5,5 @@
 2 Assassin's Trophy
 4 Bloodstained Mire
 4 Ignoble Hierarch
-4 Lightning Bolt
+3 Lightning Bolt
 # 2 Molten Rain

@@ -5,7 +5,7 @@ from mtgsdk import Card
 from mtgsdk import Set
 from PIL import Image, ImageDraw, ImageFont
 # stdlib imports
-import argparse, sys, math
+import argparse, sys, math, re
 
 # Globals for Scale (in future, add num per page?)
 # For normal card: 226 x 320 px
@@ -14,7 +14,10 @@ FONT_SIZE = 14
 FONT_TYPE ='/usr/share/fonts/dejavu-sans-mono-fonts/DejaVuSansMono.ttf'
 CARD_WIDTH = 500 # * 2
 CARD_HEIGHT = 700 # * 2
-EDGE_SCALE = CARD_WIDTH / 80 
+# I want to reword card scaling eventually... right now, they
+# act as calculations for the x/y coords to place text, but
+# there's gotta be better ways to calc this lol
+EDGE_SCALE = CARD_WIDTH / 60 
 N_SCALE = CARD_HEIGHT / 20
 T_SCALE = CARD_HEIGHT / 2.2
 O_SCALE = CARD_HEIGHT / 1.9 
@@ -73,7 +76,7 @@ def read_infile():
     (https://stackoverflow.com/questions/4902198/
     pil-how-to-scale-text-size-in-relation-to-the-size-of-the-image)
 '''
-def text_scalar(text, font, img_size, img_fill = 0.95):
+def text_scalar(text, font, img_size, img_fill = 0.90):
     jump_size = 2;
     font_size = 1
     overflow = img_fill * img_size
@@ -113,7 +116,7 @@ def add_text(d, card, font):
     size = 999; # default
     for par in text:
         body = par.split()
-        n_per_line = 6 if len(body) > 60 else 4
+        n_per_line = 6 if len(body) > 45 else 4
         while len(body) > 0:
             clip = min(len(body), n_per_line) 
             sub = ' '.join(body[0:clip])
@@ -131,7 +134,7 @@ def add_text(d, card, font):
         row += size
 
 def card_image(card):
-    print("Drawing....", card.name)
+    print('#', end='')
     font = ImageFont.truetype(FONT_TYPE, 1)
     cd = Image.new('1', (CARD_WIDTH, CARD_HEIGHT), 1) # 1=BW
     d = ImageDraw.Draw(cd)
@@ -140,29 +143,38 @@ def card_image(card):
     d = add_text(d, card, font)
     return cd
 
+def cut_lines(page):
+    pg = ImageDraw.Draw(page)
+    for i in range(1, NUM_P_W):
+        x = (i * CARD_WIDTH) - EDGE_SCALE
+        pg.line([(x, 0), (x, PAGE_H)], fill='black', width=2)
+    for j in range(1, NUM_P_H):
+        y = (j * CARD_HEIGHT) - EDGE_SCALE
+        pg.line([(0, y), (PAGE_W, y)], fill='black', width=2)
+    return page
+
 def main():
     deck = read_infile()
     # test = card_image(deck[0][1])
     pages = []
     page = Image.new('1', (PAGE_W, PAGE_H), 1)
     tally = 0;
+    print('Drawing PDF...')
+    print('[', end='')
     for c in deck:
         c_img = card_image(c[1])
         for i in range(0, c[0]):
-            # Maybe coulda done this calc better, but...
-            x = CARD_WIDTH * (tally % 3)
-            y = CARD_HEIGHT * (math.floor(tally / 3) % 4)
-            # print(x, y)
-            # print(tally, math.floor(tally / 3) % 4, tally % 3)
+            x = CARD_WIDTH * (tally % NUM_P_W)
+            y = CARD_HEIGHT * (math.floor(tally / NUM_P_W) % NUM_P_H)
             page.paste(c_img, (x, y))
             tally += 1
-            if (tally % 12) == 0:
-                pages.append(page.resize((1500, 2100)))
+            if (tally % int(NUM_P_W * NUM_P_H)) == 0:
+                pages.append(cut_lines(page).resize((1500, 2100)))
                 page = Image.new('1', (PAGE_W, PAGE_H), 1)
     # pages[1].show()
-    for p in pages:
-        p.show()
-    print(len(pages))
-
+    print(']')
+    outfile = re.sub('[^.]+$', '', args.infile.name)[:-1] + '-printable.pdf'
+    print('Done! File saved to', outfile)
+    pages[0].save(outfile, save_all=True, append_images=pages[1:])
 if __name__ == '__main__':
     main()        
