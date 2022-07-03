@@ -8,25 +8,27 @@ from PIL import Image, ImageDraw, ImageFont
 import argparse, sys, math, re
 
 # Globals for Scale (in future, add num per page?)
-# For normal card: 226 x 320 px
 # Page Card: 500 x 700
 FONT_SIZE = 14
-FONT_TYPE ='/usr/share/fonts/dejavu-sans-mono-fonts/DejaVuSansMono.ttf'
-CARD_WIDTH = 500 # * 2
-CARD_HEIGHT = 700 # * 2
+FONT ='/usr/share/fonts/dejavu-sans-mono-fonts/DejaVuSansMono.ttf'
+CARD_W = 500 # * 2
+CARD_H = 700 # * 2
 # I want to reword card scaling eventually... right now, they
 # act as calculations for the x/y coords to place text, but
 # there's gotta be better ways to calc this lol
-EDGE_SCALE = CARD_WIDTH / 60 
-N_SCALE = CARD_HEIGHT / 20
-T_SCALE = CARD_HEIGHT / 2.2
-O_SCALE = CARD_HEIGHT / 1.9 
-
+EDGE_SCALE = CARD_W / 60 
+N_SCALE = CARD_H / 20
+T_SCALE = CARD_H / 2.2
+O_SCALE = CARD_H / 1.9 
+# # of cards per page
 NUM_P_W = 3
 NUM_P_H = 4
-PAGE_W = CARD_WIDTH * NUM_P_W
-PAGE_H = CARD_HEIGHT * NUM_P_H
-
+# Dimensions of x * y cards that'll be on a page
+PAGE_W = CARD_W * NUM_P_W
+PAGE_H = CARD_H * NUM_P_H
+# the final pixel count of a given page
+PRINT_W = 563 * 2
+PRINT_H = 750 * 2
 # Other Globals & argparse
 BASICS = ['Swamp', 'Forest', 'Mountain', 'Plains', 'Island'] 
 
@@ -86,10 +88,10 @@ def text_scalar(text, font, img_size, img_fill = 0.90):
         else:
             jump_size = jump_size // 2
             font_size -= jump_size
-        font = ImageFont.truetype(FONT_TYPE, font_size)
+        font = ImageFont.truetype(FONT, font_size)
         if jump_size <= 1:
-            if font_size > CARD_WIDTH / 11: # may be bad~44
-                font_size = CARD_WIDTH // 11 
+            if font_size > CARD_W / 11: # may be bad~44
+                font_size = CARD_W // 11 
             return font_size
 
 def add_name(d, card, font):
@@ -97,15 +99,15 @@ def add_name(d, card, font):
     if cost is None:
         cost = ''
     top = card.name + '    ' + cost
-    n_size = text_scalar(top, font, CARD_WIDTH)
+    n_size = text_scalar(top, font, CARD_W)
     d.text((EDGE_SCALE, N_SCALE), top, fill='black', anchor='ls', 
-        font=ImageFont.truetype(FONT_TYPE, n_size))
+        font=ImageFont.truetype(FONT, n_size))
     return d
 
 def add_type(d, card, font):
-    t_size = text_scalar(card.type, font, CARD_WIDTH)
+    t_size = text_scalar(card.type, font, CARD_W)
     d.text((EDGE_SCALE, T_SCALE), card.type, fill='black', anchor='ls',
-        font=ImageFont.truetype(FONT_TYPE, t_size))
+        font=ImageFont.truetype(FONT, t_size))
     return d
 
 def add_text(d, card, font):
@@ -120,7 +122,7 @@ def add_text(d, card, font):
         while len(body) > 0:
             clip = min(len(body), n_per_line) 
             sub = ' '.join(body[0:clip])
-            new_size = text_scalar(sub, font, CARD_WIDTH)
+            new_size = text_scalar(sub, font, CARD_W)
             size = min(new_size, size)
             queue.append(sub)
             body = body[clip:]
@@ -130,26 +132,47 @@ def add_text(d, card, font):
             row += size
             continue
         d.text((EDGE_SCALE, row), l, fill='black', anchor='ls',
-            font=ImageFont.truetype(FONT_TYPE, size))
+            font=ImageFont.truetype(FONT, size))
         row += size
+    return d
+
+def add_br_text(d, card, font):
+    if not card.power and not card.loyalty:
+        return
+    text = ''
+    size = text_scalar(card.name, font, CARD_W) - \
+        text_scalar(card.text, font, CARD_W)
+    if card.loyalty:
+        text = '{' + card.loyalty + '}'
+    if card.power:
+        text = card.power + '/' + card.toughness
+    print(text)
+    x = int(CARD_W - EDGE_SCALE - size)
+    y = int(CARD_H - EDGE_SCALE - size)
+    print(x, y)
+    d.text((x, y), text, fill='black', anchor = 'rs',
+        font=ImageFont.truetype(FONT, size))
+    # d.text((CARD_W - EDGE_SCALE, CARD_H - EDGE_SCALE), text,
+    #     fill='black', anchor='ls', font=FONT)
 
 def card_image(card):
     print('#', end='')
-    font = ImageFont.truetype(FONT_TYPE, 1)
-    cd = Image.new('1', (CARD_WIDTH, CARD_HEIGHT), 1) # 1=BW
+    font = ImageFont.truetype(FONT, 1)
+    cd = Image.new('1', (CARD_W, CARD_H), 1) # 1=BW
     d = ImageDraw.Draw(cd)
     d = add_name(d, card, font)
     d = add_type(d, card, font)
     d = add_text(d, card, font)
+    d = add_br_text(d, card, font)
     return cd
 
 def cut_lines(page):
     pg = ImageDraw.Draw(page)
     for i in range(1, NUM_P_W):
-        x = (i * CARD_WIDTH) - EDGE_SCALE
+        x = (i * CARD_W) - EDGE_SCALE
         pg.line([(x, 0), (x, PAGE_H)], fill='black', width=2)
     for j in range(1, NUM_P_H):
-        y = (j * CARD_HEIGHT) - EDGE_SCALE
+        y = (j * CARD_H) - EDGE_SCALE
         pg.line([(0, y), (PAGE_W, y)], fill='black', width=2)
     return page
 
@@ -164,17 +187,21 @@ def main():
     for c in deck:
         c_img = card_image(c[1])
         for i in range(0, c[0]):
-            x = CARD_WIDTH * (tally % NUM_P_W)
-            y = CARD_HEIGHT * (math.floor(tally / NUM_P_W) % NUM_P_H)
+            x = CARD_W * (tally % NUM_P_W)
+            y = CARD_H * (math.floor(tally / NUM_P_W) % NUM_P_H)
             page.paste(c_img, (x, y))
             tally += 1
             if (tally % int(NUM_P_W * NUM_P_H)) == 0:
-                pages.append(cut_lines(page).resize((1500, 2100)))
+                pages.append(cut_lines(page).resize((PRINT_W, 
+                    PRINT_H)))
                 page = Image.new('1', (PAGE_W, PAGE_H), 1)
     # pages[1].show()
+    if tally % int(NUM_P_W * NUM_P_H) != 0:
+        pages.append(cut_lines(page).resize((PRINT_W, PRINT_H)))
     print(']')
     outfile = re.sub('[^.]+$', '', args.infile.name)[:-1] + '-printable.pdf'
     print('Done! File saved to', outfile)
     pages[0].save(outfile, save_all=True, append_images=pages[1:])
+
 if __name__ == '__main__':
     main()        
