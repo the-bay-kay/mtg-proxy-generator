@@ -21,7 +21,7 @@ N_SCALE = CARD_H / 20
 T_SCALE = CARD_H / 2.2
 O_SCALE = CARD_H / 1.9 
 # # of cards per page
-NUM_P_W = 3
+NUM_P_W = 4
 NUM_P_H = 4
 # Dimensions of x * y cards that'll be on a page
 PAGE_W = CARD_W * NUM_P_W
@@ -118,7 +118,7 @@ def add_text(d, card, font):
     size = 999; # default
     for par in text:
         body = par.split()
-        n_per_line = 6 if len(body) > 45 else 4
+        n_per_line = 6 if len(body) > 45 else 5
         while len(body) > 0:
             clip = min(len(body), n_per_line) 
             sub = ' '.join(body[0:clip])
